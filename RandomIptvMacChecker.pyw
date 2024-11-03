@@ -6,12 +6,21 @@ import tkinter as tk
 from tkinter import scrolledtext
 from datetime import datetime
 from urllib.parse import urlparse
+import base64
+from PIL import Image, ImageTk
+import io
 
 class MacCheckerApp:
     def __init__(self, master):
         self.master = master
-        self.master.title("Random Iptv Mac Checker")
+        self.master.title("Random IPTV Mac Checker")
         
+        # Set the window icon using a base64-encoded image
+        icon_data = ("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAFEUExURQAAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAABEAAP////swTbIAAABqdFJOUwAAAQ5foub6786BRAgPZuL4/vHRTwp46nHJ/MP3/bjkVk2j7d+JSW7ytG2yBwQ4pSEDG8UrtXNZoaunilqPkxI3zO7ne4Lo84xQ0/DenBoiXX+/qFg8XHypl2HHvL3EwkJDuewcM9iGEAL/x//9AAAAAWJLR0RrUmWlmAAAAAd0SU1FB+gLAxY0DY6W/TgAAADISURBVBjTY2BgYGJmYWVj5+Dk4uZhZAABXj5+gaysLEEhYRFRsICYeBYUsEmABSSlYAJS0mAB9iw4kAELcGTJyoLMkJLNEgALyMkrKCopq6iqqWtoggW0tHV09ST1DQyNjEXAAiamZuYWllbWNrZ29mABB0cnZxUXVxU3dw9esICnl5uMgJMTu7ePrx9YwD8gMEhAVkojOCQU4lJGxrDwCCttu0g9BihgjIqOiZWLi0+ACyQmeUvJJpulwAQYmFMDhdPSMzJBbABSPiiLTyeG8AAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0xMS0wM1QyMjo1MjoxMiswMDowMGTV5jAAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMTEtMDNUMjI6NTI6MTIrMDA6MDAViF6MAAAAKHRFWHRkYXRlOnRpbWVzdGFtcAAyMDI0LTExLTAzVDIyOjUyOjEzKzAwOjAw5Op05wAAAABJRU5ErkJggg==")
+        icon_data = base64.b64decode(icon_data)
+        self.icon_image = Image.open(io.BytesIO(icon_data))
+        self.master.iconphoto(False, ImageTk.PhotoImage(self.icon_image))
+
         self.running = False
         
         # Input for IPTV link
@@ -85,7 +94,6 @@ class MacCheckerApp:
 
             mac = self.generate_random_mac()
             self.mac_label.config(text=f"Testing MAC: {mac}")
-            #self.log_output(f"Testing MAC address: {mac}")
 
             try:
                 s = requests.Session()
@@ -106,8 +114,7 @@ class MacCheckerApp:
                         if 'js' in data and 'mac' in data['js'] and 'phone' in data['js']:
                             mac = data['js']['mac']
                             expiry = data['js']['phone']
-                            
-                            # Fourth request (get all channels)
+
                             url3 = f"{base_url}/portal.php?type=itv&action=get_all_channels&JsHttpRequest=1-xml"
                             res3 = s.get(url3, headers=headers, timeout=10, allow_redirects=False)
                             count = 0
@@ -123,18 +130,13 @@ class MacCheckerApp:
                                 result_message = f"MAC = {mac}\nExpiry = {expiry}\nChannels = {count}\n"
                                 self.log_output(result_message)
 
-                            # Immediately write the result to the file
                             with open(output_file, "a") as f:
                                 f.write(f"{base_url}/c/\n{result_message}\n")
                 else:
                     self.log_output(f"No JSON response for MAC {mac}")
             except json.decoder.JSONDecodeError:
                 self.log_output(f"JSON decode error for MAC {mac}: No valid JSON response.")
-            #except Exception as e:
-                #self.log_output(f"Error for MAC {mac}: {e}")
-                
 
-        # Enable start button and disable stop button after finishing
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
 
