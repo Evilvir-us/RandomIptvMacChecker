@@ -2,7 +2,7 @@
 Random Iptv Mac Checker for Windows
 
 ## Windows
-Download the [EXE](https://github.com/Evilvir-us/RandomIptvMacChecker/releases)
+Download the exe from the [releases page](https://github.com/Evilvir-us/RandomIptvMacChecker/releases) 
 
 ### Instructions:
 Put the stalker portal url into the first box\
