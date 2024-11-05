@@ -9,6 +9,8 @@ import base64
 from PIL import Image, ImageTk
 import io
 from datetime import datetime
+import tempfile
+import os
 
 class MacCheckerApp:
     def __init__(self, master):
@@ -26,6 +28,9 @@ class MacCheckerApp:
         self.threads = []
         self.output_file = None
 
+        # Load previous settings
+        self.load_settings()
+
         # Frame for the input and buttons
         input_frame = tk.Frame(master)
         input_frame.pack(pady=10)
@@ -33,11 +38,14 @@ class MacCheckerApp:
         # Input for IPTV link
         tk.Label(input_frame, text="Enter IPTV link:").pack(side=tk.LEFT)
         self.iptv_link_entry = tk.Entry(input_frame, width=40)
+        self.iptv_link_entry.insert(0, self.saved_url)  # Set saved URL
         self.iptv_link_entry.pack(side=tk.LEFT, padx=5)
 
         # Input for number of concurrent tests
-        tk.Label(input_frame, text="Concurrent tests:").pack(side=tk.LEFT, padx=(10, 1))
+        tk.Label(input_frame, text="Speed:").pack(side=tk.LEFT, padx=(10, 1))
         self.concurrent_tests = tk.Spinbox(input_frame, from_=1, to=10, width=5)  # Limit max to 10
+        self.concurrent_tests.delete(0, tk.END)  # Delete current value
+        self.concurrent_tests.insert(0, str(self.saved_speed))  # Insert saved speed
         self.concurrent_tests.pack(side=tk.LEFT)
 
         # Start/Stop button
@@ -59,6 +67,37 @@ class MacCheckerApp:
         self.error_text = scrolledtext.ScrolledText(master, width=60, height=5, padx=10, pady=10, bg="lightyellow")
         self.error_text.pack(padx=10, pady=(0, 20))
 
+    def load_settings(self):
+        # Try to load settings from a JSON file in the temp folder
+        temp_dir = tempfile.gettempdir()
+        settings_file = os.path.join(temp_dir, "mac_checker_settings.json")
+
+        if os.path.exists(settings_file):
+            with open(settings_file, 'r') as file:
+                try:
+                    settings = json.load(file)
+                    self.saved_url = settings.get('url', '')
+                    self.saved_speed = settings.get('speed', 1)
+                except json.JSONDecodeError:
+                    self.saved_url = ''
+                    self.saved_speed = 1
+        else:
+            self.saved_url = ''
+            self.saved_speed = 1
+
+    def save_settings(self):
+        # Save current settings (URL and speed) to a JSON file
+        settings = {
+            'url': self.iptv_link_entry.get(),
+            'speed': int(self.concurrent_tests.get())
+        }
+
+        temp_dir = tempfile.gettempdir()
+        settings_file = os.path.join(temp_dir, "mac_checker_settings.json")
+
+        with open(settings_file, 'w') as file:
+            json.dump(settings, file)
+
     def generate_random_mac(self, prefix="00:1A:79:"):
         return f"{prefix}{random.randint(0, 255):02X}:{random.randint(0, 255):02X}:{random.randint(0, 255):02X}"
 
@@ -70,7 +109,6 @@ class MacCheckerApp:
         current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         sanitized_url = self.base_url.replace("http://", "").replace("https://", "").replace("/", "_").replace(":", "-")
         filename = f"{sanitized_url}_{current_time}.txt"
-        print(f"Generated filename: {filename}")  # Debugging statement
         return filename
 
     def start_testing(self):
@@ -89,8 +127,8 @@ class MacCheckerApp:
         if num_tests > 10:
             num_tests = 10
 
-        # Reset output_file to None to ensure a new file is created on restart
-        self.output_file = None
+        # Save current settings to a file
+        self.save_settings()
 
         # Start threads to test MACs
         for _ in range(num_tests):
@@ -144,7 +182,6 @@ class MacCheckerApp:
                             if count > 0:
                                 if self.output_file is None:  # Check if output_file is uninitialized
                                     output_filename = self.get_output_filename()
-                                    print(f"Creating file: {output_filename}")  # Debugging statement
                                     self.output_file = open(output_filename, "a")  # Open file in append mode
 
                                 result_message = f"{self.iptv_link}\nMAC = {mac}\nExpiry = {expiry}\nChannels = {count}\n"
@@ -170,8 +207,6 @@ class MacCheckerApp:
 
         if hasattr(self, 'output_file') and self.output_file:
             self.output_file.close()
-            print("Output file closed.")  # Debugging statement
-            del self.output_file  # Remove reference to the file
 
     def on_closing(self):
         self.stop_testing()
