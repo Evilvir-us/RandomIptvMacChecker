@@ -147,7 +147,7 @@ class MacCheckerApp:
                                     print(f"Creating file: {output_filename}")  # Debugging statement
                                     self.output_file = open(output_filename, "a")  # Open file in append mode
 
-                                result_message = f"MAC = {mac}\nExpiry = {expiry}\nChannels = {count}\n"
+                                result_message = f"{self.iptv_link}\nMAC = {mac}\nExpiry = {expiry}\nChannels = {count}\n"
                                 self.log_output(result_message)
                             else:
                                 result_message = f"There are no channels for MAC: {mac}"
